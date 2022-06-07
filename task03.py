@@ -6,3 +6,28 @@
 # эту строку обратно (некий начальный аналог шифрования сообщений). 
 # Не использовать функцию encode.
 
+alfavit = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'+ \
+          'абвгдеёжзийклмнопрстуфхцчшщъыьэюя'+ \
+          'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + \
+          'abcdefghijklmnopqrstuvwxyz'  
+
+def enc(text, key = 13):
+    ret = ''
+    for ch in text:
+        if ch in alfavit:
+            ret += alfavit[(alfavit.find(ch)+key) % len(alfavit)]
+        else: ret += ch
+    return ret
+
+def dec(text, key = 13):
+    ret = ''
+    for ch in text:
+        if ch in alfavit:
+            ret += alfavit[(alfavit.find(ch)-key) % len(alfavit)]
+        else: ret += ch
+    return ret
+
+
+s = 'ПривеТ ДрУг!!!!'
+print(s)
+print(dec(enc(s)))
