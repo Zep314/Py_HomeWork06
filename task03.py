@@ -11,19 +11,19 @@ alfavit = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'+ 
           'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + \
           'abcdefghijklmnopqrstuvwxyz'  
 
-def enc(text, key = 13):
+def enc(text, key = 13): # шифрование
     ret = ''
     for ch in text:
         if ch in alfavit:
-            ret += alfavit[(alfavit.find(ch)+key) % len(alfavit)]
+            ret += alfavit[(alfavit.find(ch)+key) % len(alfavit)] # сдвигаем символ вперед
         else: ret += ch
     return ret
 
-def dec(text, key = 13):
+def dec(text, key = 13): # расшифровка
     ret = ''
     for ch in text:
         if ch in alfavit:
-            ret += alfavit[(alfavit.find(ch)-key) % len(alfavit)]
+            ret += alfavit[(alfavit.find(ch)-key) % len(alfavit)] # сдвигаем символ назад
         else: ret += ch
     return ret
 

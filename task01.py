@@ -4,68 +4,106 @@
 # Дополнительно: Добавить возможность использования скобок, меняющих приоритет операций. 
 # Пример: 1+2*3 => 7; (1+2)*3 => 9;
 
-OPERATORS = {
-            '+': (1, lambda x, y: x + y), 
-            '-': (1, lambda x, y: x - y),
-            '*': (2, lambda x, y: x * y), 
-            '/': (2, lambda x, y: x / y)
-            }
-def eval_(formula_string):
-    def parse(formula_string):
-        number = ''
-        for s in formula_string:
-            if s in '1234567890.': # если символ - цифра, то собираем число
-                number += s  
-            elif number: # если символ не цифра, то выдаём собранное число и начинаем собирать заново
-                yield float(number) 
-            number = ''
-            if s in OPERATORS or s in "()": # если символ - оператор или скобка, то выдаём как есть
-                yield s 
-            if number:  # если в конце строки есть число, выдаём его
-                yield float(number)
+operators = '+-/*^' # такие операции
 
-    def shunting_yard(parsed_formula):
-        stack = []  # в качестве стэка используем список
-        for token in parsed_formula:
-            # если элемент - оператор, то отправляем дальше все операторы из стека, 
-            # чей приоритет больше или равен пришедшему,
-            # до открывающей скобки или опустошения стека.
-            # здесь мы пользуемся тем, что все операторы право-ассоциативны
-            if token in OPERATORS: 
-                while stack and stack[-1] != "(" and OPERATORS[token][0] <= OPERATORS[stack[-1]][0]:
-                    yield stack.pop()
-                stack.append(token)
-            elif token == ")":
-                # если элемент - закрывающая скобка, выдаём все элементы из стека, до открывающей скобки,
-                # а открывающую скобку выкидываем из стека.
-                while stack:
-                    x = stack.pop()
-                    if x == "(":
+def my_parse(string): # раскалываем строку на операнды, скобки и числа в список
+    ret = []
+    num = ''
+    for char in string:
+        if char in '.0123456789':
+            num += char
+        elif char in operators or char in '()':
+            if len(num)>0: 
+                ret.append(num)
+                num = ''
+            ret.append(char)
+    if len(num)>0: ret.append(num)        
+    return ret
+
+def solver2operand(expression): # тут ждем 3 элемента в списке, из которых первый и последний - числа,
+                                # а средний - операнд (просто операция над 2-мя числами)
+    match expression[1]:
+        case '+': return str(float(expression[0]) + float(expression[2]))
+        case '-': return str(float(expression[0]) - float(expression[2]))
+        case '*': return str(float(expression[0]) * float(expression[2]))
+        case '/': return str(float(expression[0]) / float(expression[2]))
+        case '^': return str(float(expression[0]) ** float(expression[2]))
+        case _  : 
+            print('Ошибка в выражении (1)')
+            exit()
+    return '0'
+
+def get_operand_index(expression,op): # возвращаем первый сначала списка индекс элемента op
+    try:
+        return expression.index(op)
+    except ValueError: # а вот тут not op in expression
+        return -1
+
+def iterator(expression): # тут обрабатываем список элементов выражения
+    if expression[0] == '-': expression.insert(0,'0') # это если в первое число в выражении отрицательное
+    match len(expression):
+        case 0: return []            # такого не должно быть, но все же...
+        case 1: return expression    # такого не должно быть, но все же...
+        case 2: return expression[0] # такого не должно быть, но все же...
+        case 3: return [solver2operand(expression)] # тут все просто - 3 элемента - просто считаем их
+        case _: 
+            mypos = get_operand_index(expression,')') # ищем закр. скобку
+            if mypos == -1: # скобок нет!
+
+                mypos = get_operand_index(expression,'^') # ^ - самая высокая приоритет
+                if mypos == -1 or \
+                   ((get_operand_index(expression,'*') < mypos)       # умножение и деление - равны по приоритету
+                   and get_operand_index(expression,'*') > -1):       # но, тут вычисляем, кто из */ стоит первым
+                            mypos = get_operand_index(expression,'*') #
+                if mypos == -1 or \
+                   ((get_operand_index(expression,'/') < mypos)       # 
+                   and get_operand_index(expression,'/') > -1):       #  
+                            mypos = get_operand_index(expression,'/') # вот прям до сюда вычисляем...
+
+                if mypos == -1: mypos = get_operand_index(expression,'+') # если */^ не нашли - то + или -
+                if mypos == -1: mypos = get_operand_index(expression,'-')
+
+                if mypos > -1:
+                    expression[mypos-1] = str(solver2operand(expression[mypos-1:mypos+2])) # вычисляем операцию
+                                                                                           # с наивысшим приоритетом 
+                                                                                           # результат пишем в ячейку
+                                                                                           # первого операнда 
+                    del expression[mypos:mypos+2]  # удаляем из списка операцию и второй операнд
+                    return expression
+            else: # обработка скобок
+                open_bracket = mypos # ищем откр. скобку - берем сначала позицию закр. скобку
+                for i in range(mypos,-1,-1): # идем от закр. скобки назад, пока не надем откр. скобку
+                    if expression[i] == '(':
+                        open_bracket = i # типа нашли
                         break
-                    yield x
-            elif token == "(":
-                # если элемент - открывающая скобка, просто положим её в стек
-                stack.append(token)
-            else:
-                # если элемент - число, отправим его сразу на выход
-                yield token
-        while stack:
-            yield stack.pop()
+                
+                # делим список на 3 куска
+                expr1 = expression[0:open_bracket] # то, что до откр. скобки
+                expr3 = expression[mypos+1:] # то, что после закр. скобки
 
-    def calc(polish):
-        stack = []
-        for token in polish:
-            if token in OPERATORS:  # если приходящий элемент - оператор,
-                y, x = stack.pop(), stack.pop()  # забираем 2 числа из стека
-                stack.append(OPERATORS[token][1](x, y)) # вычисляем оператор, возвращаем в стек
-            else:
-                stack.append(token)
-        return stack[0] # результат вычисления - единственный элемент в стеке
+                expr2 = iterator(expression[open_bracket+1:mypos]) # а вот середину без скобок - засовываем
+                                                                   # сами в себя (оно там само разберется, что к чему) 
+                expression = [] # восстанавливаем наш бедный список
 
-    return calc(shunting_yard(parse(formula_string)))
+                if len(expr1) > 0: expression.extend(expr1) # вдруг впереди только одна скобка и была 
+                expression.extend(expr2)
+                if len(expr3) > 0: expression.extend(expr3) # вдруг позади только одна скобка и была
+                return expression
 
-#print(eval("2+2"))
-#print(eval_("2+2"))
+def my_solver(expression):
+    while len(expression)>1: # должен остаться один элемент в списке - ответ
+        expression = iterator(expression)
+    return expression
 
-print(eval("15/(7-(1+1))*3-(2+(1+1))"))
-print(eval_("15/(7-(1+1))*3-(2+(1+1))"))
+# ======================================================
+# тесты всякие
+s = '12*3+3+5+2*2'
+print(f'Вычисляем: \'{s}\' = {my_solver(my_parse(s))[0]} - контрольное занчение: {eval(s)}')
+s = '1+2*(3+5)'
+print(f'Вычисляем: \'{s}\' = {my_solver(my_parse(s))[0]} - контрольное занчение: {eval(s)}')
+s= '15/(7-(1+1))*3-(2+(1+1))'
+print(f'Вычисляем: \'{s}\' = {my_solver(my_parse(s))[0]} - контрольное занчение: {eval(s)}')
+s = '-2*5'
+print(f'Вычисляем: \'{s}\' = {my_solver(my_parse(s))[0]} - контрольное занчение: {eval(s)}')
+s = '-2^5'
+print(f'Вычисляем: \'{s}\' = {my_solver(my_parse(s))[0]} - контрольное занчение: {eval(s.replace("^","**"))}')

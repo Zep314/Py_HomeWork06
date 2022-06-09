@@ -40,4 +40,4 @@ start_time = time.time()
 print(CountArounNums(100))
 print(CountArounNums(1000000))
 print(f'Программа работала {time.time() - start_time} секунд [{time.strftime("%H:%M:%S",time.gmtime(time.time() - start_time))}]')
-# программа работает ~20 секунд
+# программа работает ~20 секунд на долхом ноуте (на хорошущем - 3 секунды) - насчитало 55 штук
